@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Learn SA Script Marking App</title>
+<style>
+:root{
+  --bg:#f4f7fb; --card:#fff; --ink:#1f2937; --muted:#6b7280; --line:#d9e1ec;
+  --brand:#5b5bd6; --brand2:#7c3aed; --good:#15803d; --warn:#b45309; --bad:#b91c1c;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;padding:22px 16px}
+header .wrap{max-width:1200px;margin:auto}
+h1{margin:0 0 6px;font-size:28px}
+header p{margin:0;opacity:.92}
+main{max-width:1200px;margin:18px auto;padding:0 14px 40px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:0 4px 16px rgba(31,41,55,.06)}
+.card h2{margin:0 0 12px;font-size:18px}
+label{display:block;font-weight:700;font-size:13px;margin:10px 0 6px}
+input,select,textarea,button{font:inherit}
+input[type="text"],input[type="number"],select,textarea{
+  width:100%;border:1px solid #cbd5e1;border-radius:10px;padding:10px;background:#fff;color:var(--ink)
+}
+textarea{min-height:110px;resize:vertical}
+.upload{border:2px dashed #cbd5e1;border-radius:14px;padding:14px;text-align:center;background:#fafcff}
+.upload input{max-width:100%}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+button{border:0;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer}
+.primary{background:var(--brand);color:#fff}
+.secondary{background:#eef2ff;color:#3730a3}
+.good{background:#dcfce7;color:#166534}
+.warn{background:#ffedd5;color:#9a3412}
+.danger{background:#fee2e2;color:#991b1b}
+.small{padding:7px 10px;font-size:13px}
+.status{font-size:13px;color:var(--muted);margin-top:8px}
+.full{grid-column:1/-1}
+.toolbar{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+.question{border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0;background:#fff}
+.qhead{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+.qtitle{font-weight:800}
+.marks{display:flex;gap:8px;align-items:center}
+.marks input{width:85px}
+.comment-box{margin-top:10px}
+.quick{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.quick button{background:#f3f4f6;color:#374151}
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.metric{background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center}
+.metric b{display:block;font-size:24px;margin-top:4px}
+#previewPane{white-space:pre-wrap;background:#fbfdff;border:1px solid var(--line);border-radius:12px;padding:12px;min-height:160px;max-height:500px;overflow:auto}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
+@media(max-width:800px){.grid{grid-template-columns:1fr}.summary{grid-template-columns:1fr 1fr}.full{grid-column:auto}}
+@media print{
+  header,.no-print,#setupCard,#uploadCard{display:none!important}
+  body{background:#fff}
+  main{max-width:none;margin:0;padding:0}
+  .card{box-shadow:none;border:0}
+  .question{break-inside:avoid}
+  button{display:none}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>Learn SA Script Marking & Moderation</h1>
+    <p>Upload a memo and learner script, capture marks, add natural comments, and print a clean marking record.</p>
+  </div>
+</header>
+
+<main>
+  <div class="grid">
+    <section class="card" id="setupCard">
+      <h2>Assessment Details</h2>
+      <label>Learner name</label>
+      <input id="learner" type="text" placeholder="Learner name" />
+      <label>Subject</label>
+      <input id="subject" type="text" placeholder="e.g. Mathematics" />
+      <label>Grade</label>
+      <select id="grade">
+        <option>Grade 7</option><option>Grade 8</option><option>Grade 9</option>
+        <option>Grade 10</option><option>Grade 11</option><option selected>Grade 12</option>
+      </select>
+      <label>Assessment title</label>
+      <input id="assessment" type="text" placeholder="e.g. Term 3 Test" />
+      <label>Marker</label>
+      <input id="marker" type="text" placeholder="Marker name" />
+    </section>
+
+    <section class="card" id="uploadCard">
+      <h2>Upload Files</h2>
+      <div class="upload">
+        <label>Memo / marking guideline</label>
+        <input id="memoFile" type="file" accept=".txt,.md,.csv,.json,.pdf,.doc,.docx,image/*" />
+      </div>
+      <div class="upload" style="margin-top:10px">
+        <label>Learner script</label>
+        <input id="scriptFile" type="file" accept=".txt,.md,.csv,.json,.pdf,.doc,.docx,image/*" />
+      </div>
+      <div class="status" id="uploadStatus">Files stay on your device in this version.</div>
+      <div class="btns">
+        <button class="secondary" onclick="readTextFiles()">Load readable text</button>
+        <button class="primary" onclick="buildFromMemo()">Create question rows</button>
+      </div>
+    </section>
+
+    <section class="card full">
+      <div class="toolbar">
+        <h2 style="margin:0">Reference / Extracted Text</h2>
+        <div class="btns no-print" style="margin:0">
+          <button class="small secondary" onclick="togglePreview('memo')">Memo</button>
+          <button class="small secondary" onclick="togglePreview('script')">Script</button>
+        </div>
+      </div>
+      <div id="previewPane">Upload text-based files or paste text below.</div>
+      <label class="no-print">Paste memo text manually</label>
+      <textarea class="no-print" id="memoText" placeholder="Paste the memo here if the file cannot be read directly..."></textarea>
+      <label class="no-print">Paste learner script text manually</label>
+      <textarea class="no-print" id="scriptText" placeholder="Paste the learner script here..."></textarea>
+    </section>
+
+    <section class="card full">
+      <div class="toolbar">
+        <h2 style="margin:0">Marking Sheet</h2>
+        <div class="btns no-print" style="margin:0">
+          <button class="small primary" onclick="addQuestion()">+ Add Question</button>
+          <button class="small secondary" onclick="suggestComments()">Suggest Comments</button>
+          <button class="small good" onclick="window.print()">Print / Save PDF</button>
+          <button class="small warn" onclick="exportRecord()">Export Record</button>
+          <button class="small danger" onclick="resetAll()">Reset</button>
+        </div>
+      </div>
+      <div id="questions"></div>
+    </section>
+
+    <section class="card full">
+      <h2>Result Summary</h2>
+      <div class="summary">
+        <div class="metric">Marks Awarded<b id="sumAwarded">0</b></div>
+        <div class="metric">Total Marks<b id="sumTotal">0</b></div>
+        <div class="metric">Percentage<b id="sumPct">0%</b></div>
+        <div class="metric">Questions<b id="sumQs">0</b></div>
+      </div>
+      <label>Overall marker comment</label>
+      <textarea id="overallComment" placeholder="Overall feedback to the learner..."></textarea>
+      <div class="quick no-print">
+        <button onclick="setOverall('A strong effort. Check small accuracy errors and keep showing full working.')">Strong effort</button>
+        <button onclick="setOverall('Good understanding shown. Revise the areas where marks were lost and answer more precisely.')">Good understanding</button>
+        <button onclick="setOverall('Some correct ideas are present, but more revision and complete working are needed.')">Needs revision</button>
+        <button onclick="setOverall('Please read each question carefully, show all required working, and check answers before submitting.')">Careful reading</button>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer>Learn SA • Script Marking and Moderation Tool</footer>
+
+<script>
+let previewMode = 'memo';
+
+function safeText(file){
+  return new Promise((resolve,reject)=>{
+    if(!file) return resolve('');
+    const ext=(file.name.split('.').pop()||'').toLowerCase();
+    const readable=['txt','md','csv','json'];
+    if(!readable.includes(ext)) return resolve('[Preview not available for this file type. Use the file as reference and paste extracted text manually if needed.]');
+    const r=new FileReader();
+    r.onload=()=>resolve(r.result||'');
+    r.onerror=reject;
+    r.readAsText(file);
+  });
+}
+
+async function readTextFiles(){
+  const memo=document.getElementById('memoFile').files[0];
+  const script=document.getElementById('scriptFile').files[0];
+  const [mt,st]=await Promise.all([safeText(memo),safeText(script)]);
+  if(mt) document.getElementById('memoText').value=mt;
+  if(st) document.getElementById('scriptText').value=st;
+  document.getElementById('uploadStatus').textContent='Files loaded where browser-readable.';
+  togglePreview(previewMode);
+}
+
+function togglePreview(which){
+  previewMode=which;
+  const text=document.getElementById(which==='memo'?'memoText':'scriptText').value.trim();
+  document.getElementById('previewPane').textContent=text || (which==='memo'?'No memo text loaded.':'No script text loaded.');
+}
+
+function addQuestion(title='',total=0,answer=''){
+  const box=document.createElement('div');
+  box.className='question';
+  box.innerHTML=`
+    <div class="qhead">
+      <input class="qtitleInput" type="text" value="${escapeHtml(title || 'Question')}" style="font-weight:800;max-width:430px" />
+      <div class="marks">
+        <span>Mark</span><input class="awarded" type="number" min="0" step="0.5" value="0" />
+        <span>/</span><input class="total" type="number" min="0" step="0.5" value="${Number(total)||0}" />
+        <button class="small danger no-print" onclick="this.closest('.question').remove();updateSummary()">Remove</button>
+      </div>
+    </div>
+    <label>Memo / expected answer</label>
+    <textarea class="expected">${escapeHtml(answer)}</textarea>
+    <label>Marker comment</label>
+    <textarea class="comment" placeholder="Write a short, natural marking comment..."></textarea>
+    <div class="quick no-print">
+      <button onclick="quickComment(this,'Correct. Well done.')">Correct</button>
+      <button onclick="quickComment(this,'Good method, but check the final answer.')">Method good</button>
+      <button onclick="quickComment(this,'Partly correct. More working is needed.')">Partly correct</button>
+      <button onclick="quickComment(this,'Check the question carefully and try again.')">Check question</button>
+      <button onclick="quickComment(this,'Show all steps so the method can be awarded.')">Show steps</button>
+      <button onclick="quickComment(this,'Revise this section before the next assessment.')">Revise</button>
+    </div>`;
+  document.getElementById('questions').appendChild(box);
+  box.querySelectorAll('.awarded,.total').forEach(x=>x.addEventListener('input',updateSummary));
+  updateSummary();
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+}
+
+function buildFromMemo(){
+  const text=document.getElementById('memoText').value.trim();
+  const container=document.getElementById('questions');
+  if(!text){ if(!container.children.length) addQuestion('Question 1',0,''); return; }
+
+  container.innerHTML='';
+  const lines=text.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+  let chunks=[], current=null;
+  const qrx=/^(question|q)\s*([0-9]+(?:\.[0-9]+)*)[:.\-\s]*(.*)$/i;
+  for(const line of lines){
+    const m=line.match(qrx);
+    if(m){
+      if(current) chunks.push(current);
+      current={title:`Question ${m[2]}`,body:m[3]||''};
+    }else{
+      if(!current) current={title:'Question 1',body:''};
+      current.body += (current.body?'\n':'')+line;
+    }
+  }
+  if(current) chunks.push(current);
+  chunks.slice(0,60).forEach((c,i)=>{
+    let total=0;
+    const mm=c.body.match(/\((\d+(?:\.\d+)?)\s*(?:marks?|m)?\)\s*$/i) || c.body.match(/\[(\d+(?:\.\d+)?)\]/);
+    if(mm) total=parseFloat(mm[1]);
+    addQuestion(c.title || `Question ${i+1}`, total, c.body);
+  });
+}
+
+function quickComment(btn,text){
+  const q=btn.closest('.question');
+  const area=q.querySelector('.comment');
+  area.value=area.value.trim() ? area.value.trim()+' '+text : text;
+}
+
+function suggestComments(){
+  document.querySelectorAll('.question').forEach(q=>{
+    const a=parseFloat(q.querySelector('.awarded').value)||0;
+    const t=parseFloat(q.querySelector('.total').value)||0;
+    const c=q.querySelector('.comment');
+    if(c.value.trim() || t<=0) return;
+    const r=a/t;
+    if(r>=.99) c.value='Correct. Clear and accurate.';
+    else if(r>=.75) c.value='Good understanding. Check the small error where marks were lost.';
+    else if(r>=.5) c.value='Partly correct. The main idea is there, but the answer needs more accurate working.';
+    else if(r>0) c.value='Some progress shown. Revise the method and show each step clearly.';
+    else c.value='Not correct yet. Revisit this section and check the required method.';
+  });
+}
+
+function updateSummary(){
+  let a=0,t=0,n=0;
+  document.querySelectorAll('.question').forEach(q=>{
+    a+=parseFloat(q.querySelector('.awarded').value)||0;
+    t+=parseFloat(q.querySelector('.total').value)||0;
+    n++;
+  });
+  document.getElementById('sumAwarded').textContent=fmt(a);
+  document.getElementById('sumTotal').textContent=fmt(t);
+  document.getElementById('sumPct').textContent=t?((a/t)*100).toFixed(1)+'%':'0%';
+  document.getElementById('sumQs').textContent=n;
+}
+
+function fmt(n){return Number.isInteger(n)?String(n):n.toFixed(1)}
+
+function setOverall(text){document.getElementById('overallComment').value=text}
+
+function exportRecord(){
+  const data={
+    learner:document.getElementById('learner').value,
+    subject:document.getElementById('subject').value,
+    grade:document.getElementById('grade').value,
+    assessment:document.getElementById('assessment').value,
+    marker:document.getElementById('marker').value,
+    overallComment:document.getElementById('overallComment').value,
+    questions:[...document.querySelectorAll('.question')].map(q=>({
+      question:q.querySelector('.qtitleInput').value,
+      mark:q.querySelector('.awarded').value,
+      total:q.querySelector('.total').value,
+      expected:q.querySelector('.expected').value,
+      comment:q.querySelector('.comment').value
+    }))
+  };
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='LearnSA_Marking_Record.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function resetAll(){
+  if(!confirm('Clear the current marking sheet?')) return;
+  document.querySelectorAll('input[type="text"],textarea').forEach(x=>x.value='');
+  document.getElementById('questions').innerHTML='';
+  document.getElementById('previewPane').textContent='Upload text-based files or paste text below.';
+  updateSummary();
+  addQuestion('Question 1',0,'');
+}
+
+addQuestion('Question 1',0,'');
+</script>
+</body>
+</html>
